@@ -1,0 +1,71 @@
+from kafka import KafkaProducer
+from python_proto.metrics_pb2 import Metrics
+import json
+import os
+from kafka import KafkaProducer
+import sys
+from google.protobuf.json_format import MessageToJson
+from google.protobuf import json_format
+
+
+
+def main():
+    producer = KafkaProducer(bootstrap_servers=['127.0.0.1:9092'])
+    topic = "metrics_pb"
+    metrics = Metrics()
+
+    #method 1 :
+    metrics.unit = '123'
+    metrics.http_method = 'abc'
+    metrics.value = 116
+    metrics.http_code='888'
+    metrics.metricType='ahha'
+    metrics.server='9090'
+    #
+    resulting_message = json_format.MessageToJson(metrics, indent=None, including_default_value_fields=True)
+    print(resulting_message)
+    # producer.send(topic,json.dumps(resulting_message).encode('utf-8'))
+    producer.send(topic, resulting_message.encode('utf-8'))
+    producer.flush()
+
+    # method 2
+    variable = """{ "unit": "milliseconds",
+                  "http_method": "GET",
+                  "value": 44,
+                  "timestamp": "2017-04-06T02:36:22Z",
+                  "http_code": "200",
+                  "page": "/",
+                  "metricType": "request/latency",
+                  "server": "www1.example.com"
+                }"""
+    d=json.loads(variable)
+    # print(d)
+    for k,v in d.items():
+        setattr(metrics,k,v)
+    # print(metrics)
+    pb=metrics.SerializeToString()
+    producer.send(topic, pb)
+    producer.flush()
+
+
+    # method 3
+    variable = """{ "unit": "secs",
+                  "http_method": "post",
+                  "value": 33,
+                  "timestamp": "2019-04-06T02:36:22Z",
+                  "http_code": "400",
+                  "page": "/",
+                  "metricType": "request/latency",
+                  "server": "www2.example.com"
+                }"""
+    d=json.loads(variable)
+    # print(d)
+    for k,v in d.items():
+        setattr(metrics,k,v)
+    jsonObj = MessageToJson(metrics)
+    producer.send(topic, jsonObj.encode('utf-8'))
+    producer.flush()
+
+
+if __name__ == '__main__':
+    main()
